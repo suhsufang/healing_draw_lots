@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>療癒抽籤箱</title>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<style>
+  /* ===== 基本設定 ===== */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #fce4ec, #f3e5f5, #e8eaf6, #e0f7fa);
+    background-size: 400% 400%;
+    animation: bgShift 12s ease infinite;
+    overflow: hidden;
+  }
+  @keyframes bgShift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* ===== 頁面容器 ===== */
+  .page { display: none; width: 100%; height: 100vh; position: relative; }
+  .page.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+  /* ===== 首頁 ===== */
+  #landing h1 {
+    font-size: 4rem;
+    color: #5c3d6e;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 40px;
+    animation: float 3s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+  .start-btn {
+    font-size: 1.5rem;
+    padding: 16px 60px;
+    border: none;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #a78bfa, #7c3aed);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(124,58,237,0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .start-btn:hover { transform: scale(1.08); box-shadow: 0 8px 28px rgba(124,58,237,0.5); }
+
+  /* ===== 主畫面 ===== */
+  #main { justify-content: center; }
+  .main-title {
+    font-size: 2.4rem;
+    color: #5c3d6e;
+    margin-bottom: 50px;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.08);
+  }
+  .buttons-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 0 20px;
+  }
+  .draw-btn {
+    width: 100px;
+    height: 100px;
+    border: none;
+    border-radius: 20px;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+  }
+  .draw-btn:hover { transform: translateY(-6px) scale(1.05); box-shadow: 0 10px 24px rgba(0,0,0,0.3); }
+  .draw-btn:active { transform: translateY(-2px) scale(0.98); }
+
+  .draw-btn[data-id="1"] { background: linear-gradient(135deg, #ef4444, #dc2626); }
+  .draw-btn[data-id="2"] { background: linear-gradient(135deg, #facc15, #eab308); }
+  .draw-btn[data-id="3"] { background: linear-gradient(135deg, #a855f7, #9333ea); }
+  .draw-btn[data-id="4"] { background: linear-gradient(135deg, #67e8f9, #22d3ee); }
+  .draw-btn[data-id="5"] { background: linear-gradient(135deg, #4ade80, #22c55e); }
+  .draw-btn[data-id="6"] { background: linear-gradient(135deg, #fb923c, #f97316); }
+
+  /* 右上角員工設定 */
+  .settings-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 10px 22px;
+    border: 2px solid #8b5cf6;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.7);
+    color: #6d28d9;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition: background 0.2s;
+  }
+  .settings-btn:hover { background: rgba(139,92,246,0.15); }
+
+  /* 返回鍵 */
+  .back-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    padding: 10px 22px;
+    border: 2px solid #8b5cf6;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.7);
+    color: #6d28d9;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition: background 0.2s;
+  }
+  .back-btn:hover { background: rgba(139,92,246,0.15); }
+
+  /* 左上角齒輪設定 */
+  .gear-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 46px;
+    height: 46px;
+    border: 2px solid #8b5cf6;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.7);
+    color: #6d28d9;
+    font-size: 1.4rem;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition: background 0.2s, transform 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .gear-btn:hover { background: rgba(139,92,246,0.15); transform: rotate(90deg); }
+
+  /* 背景設定面板 */
+  .bg-panel {
+    position: absolute;
+    top: 76px;
+    left: 20px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+    z-index: 90;
+    display: none;
+    width: 260px;
+    animation: cardPop 0.25s ease;
+  }
+  .bg-panel.active { display: block; }
+  .bg-panel h3 { color: #5c3d6e; font-size: 1.1rem; margin-bottom: 14px; text-align: center; }
+  .bg-panel-section { margin-bottom: 14px; }
+  .bg-panel-section h4 { color: #7c3aed; font-size: 0.85rem; margin-bottom: 8px; }
+  .bg-options {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .bg-swatch {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 12px;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+  .bg-swatch:hover { transform: scale(1.12); }
+  .bg-swatch.selected { border-color: #7c3aed; box-shadow: 0 0 0 2px #c4b5fd; }
+  .text-color-swatch {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 12px;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    position: relative;
+  }
+  .text-color-swatch::after {
+    content: 'A';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: inherit;
+  }
+  .text-color-swatch:hover { transform: scale(1.12); }
+  .text-color-swatch.selected { border-color: #7c3aed; box-shadow: 0 0 0 2px #c4b5fd; }
+
+  /* 開關切換 */
+  .toggle-section { margin-bottom: 10px; }
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+  }
+  .toggle-label { color: #5c3d6e; font-size: 0.9rem; font-weight: bold; }
+  .toggle-switch {
+    position: relative;
+    width: 48px;
+    height: 26px;
+    background: #d1d5db;
+    border-radius: 13px;
+    cursor: pointer;
+    transition: background 0.25s;
+    border: none;
+    padding: 0;
+  }
+  .toggle-switch.on { background: #7c3aed; }
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.25s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .toggle-switch.on::after { transform: translateX(22px); }
+
+  /* 聲音選擇 */
+  .sound-select-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .sound-chip {
+    flex: 1;
+    padding: 6px 0;
+    border: 2px solid #d1d5db;
+    border-radius: 10px;
+    background: #fff;
+    color: #5c3d6e;
+    font-size: 0.75rem;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: center;
+    transition: transform 0.15s, border-color 0.2s, background 0.2s;
+  }
+  .sound-chip:hover { transform: scale(1.06); }
+  .sound-chip.selected { border-color: #7c3aed; background: #ede9fe; }
+
+
+
+  /* 卡片翻轉動畫 */
+  .card-flip-wrapper {
+    perspective: 800px;
+    width: 320px;
+    min-height: 200px;
+  }
+  .card.flip-anim {
+    animation: cardFlip 0.6s ease;
+  }
+  @keyframes cardFlip {
+    0%   { transform: rotateY(-90deg) scale(0.8); opacity: 0; }
+    50%  { transform: rotateY(-20deg) scale(1.02); opacity: 0.7; }
+    100% { transform: rotateY(0deg) scale(1); opacity: 1; }
+  }
+  .card.no-anim {
+    animation: none;
+  }
+
+  /* ===== 卡片彈出 ===== */
+  .overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .overlay.active { display: flex; }
+
+  .card-container { text-align: center; }
+
+  .card {
+    width: 320px;
+    min-height: 200px;
+    border-radius: 20px;
+    padding: 40px 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 1.4rem;
+    line-height: 1.8;
+    color: #3b1f5c;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .card[data-color="1"] { background: linear-gradient(135deg, #fecaca, #fca5a5); }
+  .card[data-color="2"] { background: linear-gradient(135deg, #fef08a, #fde047); }
+  .card[data-color="3"] { background: linear-gradient(135deg, #e9d5ff, #d8b4fe); }
+  .card[data-color="4"] { background: linear-gradient(135deg, #cffafe, #a5f3fc); }
+  .card[data-color="5"] { background: linear-gradient(135deg, #bbf7d0, #86efac); }
+  .card[data-color="6"] { background: linear-gradient(135deg, #fed7aa, #fdba74); }
+
+  @keyframes cardPop {
+    0%   { transform: scale(0.3) rotate(-8deg); opacity: 0; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+
+  .card-actions {
+    margin-top: 18px;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+  .card-actions button {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: bold;
+    transition: transform 0.15s;
+  }
+  .card-actions button:hover { transform: scale(1.05); }
+  .save-card-btn { background: #7c3aed; color: #fff; }
+  .close-card-btn { background: #e5e7eb; color: #374151; }
+
+  /* ===== 密碼彈窗 ===== */
+  .password-box {
+    background: #fff;
+    border-radius: 20px;
+    padding: 36px 32px;
+    text-align: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+    animation: cardPop 0.3s ease;
+  }
+  .password-box h2 { color: #5c3d6e; margin-bottom: 20px; font-size: 1.4rem; }
+  .password-box input {
+    width: 200px;
+    padding: 10px 16px;
+    border: 2px solid #d1d5db;
+    border-radius: 10px;
+    font-size: 1.2rem;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .password-box input:focus { border-color: #8b5cf6; }
+  .password-box .pw-actions { margin-top: 20px; display: flex; gap: 10px; justify-content: center; }
+  .password-box .pw-actions button {
+    padding: 10px 28px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  .pw-confirm { background: #7c3aed; color: #fff; }
+  .pw-cancel { background: #e5e7eb; color: #374151; }
+  .pw-error { color: #ef4444; margin-top: 10px; font-size: 0.9rem; display: none; }
+
+  /* ===== 員工設定頁 ===== */
+  #settings {
+    overflow-y: auto;
+    padding: 80px 20px 40px;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+  .settings-title {
+    font-size: 2rem;
+    color: #5c3d6e;
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  .tab-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .tab-btn {
+    padding: 10px 22px;
+    border: 2px solid transparent;
+    border-radius: 14px;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #fff;
+    cursor: pointer;
+    transition: transform 0.15s, opacity 0.2s;
+    opacity: 0.6;
+  }
+  .tab-btn.active { opacity: 1; transform: scale(1.1); border-color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+  .tab-btn[data-id="1"] { background: #ef4444; }
+  .tab-btn[data-id="2"] { background: #eab308; }
+  .tab-btn[data-id="3"] { background: #9333ea; }
+  .tab-btn[data-id="4"] { background: #22d3ee; }
+  .tab-btn[data-id="5"] { background: #22c55e; }
+  .tab-btn[data-id="6"] { background: #f97316; }
+
+  .cards-editor {
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .card-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card-input-row label {
+    min-width: 36px;
+    font-weight: bold;
+    color: #5c3d6e;
+    text-align: right;
+  }
+  .card-input-row input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 2px solid #d1d5db;
+    border-radius: 10px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .card-input-row input:focus { border-color: #8b5cf6; }
+
+  .save-settings-btn {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 14px 48px;
+    border: none;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(124,58,237,0.4);
+    transition: transform 0.2s;
+    z-index: 50;
+  }
+  .save-settings-btn:hover { transform: translateX(-50%) scale(1.06); }
+
+  .save-toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #22c55e;
+    color: #fff;
+    padding: 12px 32px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 1rem;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    pointer-events: none;
+    z-index: 50;
+  }
+  .save-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ===== 空卡片提示 ===== */
+  .empty-msg {
+    background: #fff;
+    border-radius: 20px;
+    padding: 36px 32px;
+    text-align: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+    animation: cardPop 0.3s ease;
+    color: #5c3d6e;
+    font-size: 1.2rem;
+  }
+  .empty-msg button {
+    margin-top: 16px;
+    padding: 10px 28px;
+    border: none;
+    border-radius: 10px;
+    background: #e5e7eb;
+    color: #374151;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== 首頁 ========== -->
+<div id="landing" class="page active">
+  <h1>療癒抽籤箱</h1>
+  <button class="start-btn" onclick="startGame()">開 始</button>
+</div>
+
+<!-- ========== 主畫面 ========== -->
+<div id="main" class="page">
+  <button class="gear-btn" onclick="if(optSound)playClickSound();toggleBgPanel()">&#9881;</button>
+  <div class="bg-panel" id="bgPanel">
+    <h3>背景設定</h3>
+    <div class="bg-panel-section">
+      <h4>漸層色</h4>
+      <div class="bg-options" id="gradientOptions"></div>
+    </div>
+    <div class="bg-panel-section">
+      <h4>單色</h4>
+      <div class="bg-options" id="solidOptions"></div>
+    </div>
+    <div class="bg-panel-section">
+      <h4>標題文字顏色</h4>
+      <div class="bg-options" id="textColorOptions"></div>
+    </div>
+    <div class="bg-panel-section toggle-section">
+      <div class="toggle-row">
+        <span class="toggle-label">開放動畫</span>
+        <button class="toggle-switch on" id="toggleAnim" onclick="toggleOption('anim')"></button>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">開放聲音</span>
+        <button class="toggle-switch on" id="toggleSound" onclick="toggleOption('sound')"></button>
+      </div>
+    </div>
+    <div class="bg-panel-section">
+      <h4>按鈕音效</h4>
+      <div class="sound-select-row" id="clickSoundOptions"></div>
+    </div>
+    <div class="bg-panel-section">
+      <h4>翻牌音效</h4>
+      <div class="sound-select-row" id="dealSoundOptions"></div>
+    </div>
+  </div>
+  <button class="settings-btn" onclick="if(optSound)playClickSound();openPassword()">員工設定</button>
+  <h2 class="main-title">選出抽到的籤</h2>
+  <div class="buttons-row">
+    <button class="draw-btn" data-id="1" onclick="draw(1)">1</button>
+    <button class="draw-btn" data-id="2" onclick="draw(2)">2</button>
+    <button class="draw-btn" data-id="3" onclick="draw(3)">3</button>
+    <button class="draw-btn" data-id="4" onclick="draw(4)">4</button>
+    <button class="draw-btn" data-id="5" onclick="draw(5)">5</button>
+    <button class="draw-btn" data-id="6" onclick="draw(6)">6</button>
+  </div>
+</div>
+
+<!-- ========== 員工設定頁 ========== -->
+<div id="settings" class="page">
+  <button class="back-btn" onclick="goTo('main')">← 返回</button>
+  <h2 class="settings-title">員工設定</h2>
+  <div class="tab-row">
+    <button class="tab-btn active" data-id="1" onclick="switchTab(1)">1</button>
+    <button class="tab-btn" data-id="2" onclick="switchTab(2)">2</button>
+    <button class="tab-btn" data-id="3" onclick="switchTab(3)">3</button>
+    <button class="tab-btn" data-id="4" onclick="switchTab(4)">4</button>
+    <button class="tab-btn" data-id="5" onclick="switchTab(5)">5</button>
+    <button class="tab-btn" data-id="6" onclick="switchTab(6)">6</button>
+  </div>
+  <div class="cards-editor" id="cardsEditor"></div>
+  <button class="save-settings-btn" onclick="saveSettings()">儲 存</button>
+  <div class="save-toast" id="saveToast">已儲存！</div>
+</div>
+
+<!-- ========== 卡片顯示 Overlay ========== -->
+<div class="overlay" id="cardOverlay">
+  <div class="card-container">
+    <div class="card-flip-wrapper">
+      <div class="card" id="cardDisplay" data-color="1"></div>
+    </div>
+    <div class="card-actions">
+      <button class="save-card-btn" onclick="saveCardImage()">儲存此照片</button>
+      <button class="close-card-btn" onclick="closeCard()">關 閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 密碼 Overlay ========== -->
+<div class="overlay" id="pwOverlay">
+  <div class="password-box">
+    <h2>請輸入員工密碼</h2>
+    <input type="password" id="pwInput" maxlength="10" placeholder="密碼"
+           onkeydown="if(event.key==='Enter')checkPassword()">
+    <div class="pw-error" id="pwError">密碼錯誤，請重試</div>
+    <div class="pw-actions">
+      <button class="pw-confirm" onclick="checkPassword()">確 認</button>
+      <button class="pw-cancel" onclick="closePassword()">取 消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 空卡片提示 Overlay ========== -->
+<div class="overlay" id="emptyOverlay">
+  <div class="empty-msg">
+    這個按鈕還沒有設定卡片喔！
+    <br>
+    <button onclick="closeEmpty()">知道了</button>
+  </div>
+</div>
+
+<script>
+// ===== 資料同步設定 =====
+// 從伺服器讀取資料
+function loadFromCloud() {
+  return fetch('/api/data')
+    .then(r => r.ok ? r.json() : null)
+    .catch(() => null);
+}
+
+// 儲存到伺服器
+function saveToCloud(d) {
+  return fetch('/api/data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(d)
+  }).catch(err => console.warn('儲存失敗：', err));
+}
+
+// ===== 音效（Web Audio API 產生） =====
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+  return audioCtx;
+}
+
+function playStartSound() {
+  const ctx = getAudioCtx();
+  // 歡快的三音和弦
+  const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+  notes.forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.1);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.1 + 0.6);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime + i * 0.1);
+    osc.stop(ctx.currentTime + i * 0.1 + 0.6);
+  });
+}
+
+function playCardSound() {
+  const ctx = getAudioCtx();
+  // 療癒叮咚聲
+  const notes = [783.99, 1046.50]; // G5, C6
+  notes.forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.12);
+    gain.gain.setValueAtTime(0.18, ctx.currentTime + i * 0.12);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.5);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime + i * 0.12);
+    osc.stop(ctx.currentTime + i * 0.12 + 0.5);
+  });
+}
+
+// ----- 按鈕音效 5 種 -----
+const clickSounds = [
+  { name: '叮', fn() {
+    const ctx = getAudioCtx(), t = ctx.currentTime;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(1046.5,t);
+    g.gain.setValueAtTime(0.18,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.5);
+    o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+0.5);
+  }},
+  { name: '水滴', fn() {
+    const ctx = getAudioCtx(), t = ctx.currentTime;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(1400,t); o.frequency.exponentialRampToValueAtTime(400,t+0.15);
+    g.gain.setValueAtTime(0.15,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.25);
+    o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+0.25);
+  }},
+  { name: '氣泡', fn() {
+    const ctx = getAudioCtx(), t = ctx.currentTime;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(300,t); o.frequency.exponentialRampToValueAtTime(1200,t+0.08);
+    o.frequency.exponentialRampToValueAtTime(600,t+0.15);
+    g.gain.setValueAtTime(0.14,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.2);
+    o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+0.2);
+  }},
+  { name: '木魚', fn() {
+    const ctx = getAudioCtx(), t = ctx.currentTime;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type='triangle'; o.frequency.setValueAtTime(800,t); o.frequency.exponentialRampToValueAtTime(300,t+0.06);
+    g.gain.setValueAtTime(0.25,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.12);
+    o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+0.12);
+  }},
+  { name: '鈴鐺', fn() {
+    const ctx = getAudioCtx(), t = ctx.currentTime;
+    [1479,1109].forEach((f,i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type='sine'; o.frequency.setValueAtTime(f,t+i*0.06);
+      g.gain.setValueAtTime(0.1,t+i*0.06); g.gain.exponentialRampToValueAtTime(0.001,t+i*0.06+0.3);
+      o.connect(g); g.connect(ctx.destination); o.start(t+i*0.06); o.stop(t+i*0.06+0.3);
+    });
+  }},
+];
+
+// ----- 翻牌音效 5 種 -----
+const dealSounds = [
+  { name: '唰', fn() {
+    const ctx = getAudioCtx(), t = ctx.currentTime;
+    const len = ctx.sampleRate*0.15, buf = ctx.createBuffer(1,len,ctx.sampleRate), d = buf.getChannelData(0);
+    for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3);
+    const s=ctx.createBufferSource(); s.buffer=buf;
+    const f=ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.setValueAtTime(3000,t); f.Q.setValueAtTime(0.8,t);
+    const g=ctx.createGain(); g.gain.setValueAtTime(0.35,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.15);
+    s.connect(f); f.connect(g); g.connect(ctx.destination); s.start(t); s.stop(t+0.15);
+  }},
+  { name: '柔和', fn() {
+    const ctx = getAudioCtx(), t = ctx.currentTime;
+    // 高音 Sol (G5)
+    const o1 = ctx.createOscillator(), g1 = ctx.createGain();
+    o1.type='sine'; o1.frequency.setValueAtTime(783.99,t);
+    g1.gain.setValueAtTime(0.18,t); g1.gain.exponentialRampToValueAtTime(0.001,t+0.6);
+    o1.connect(g1); g1.connect(ctx.destination); o1.start(t); o1.stop(t+0.6);
+    // 0.5 秒後彈更高的 Do (C6)
+    const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+    o2.type='sine'; o2.frequency.setValueAtTime(1046.5,t+0.1);
+    g2.gain.setValueAtTime(0,t); g2.gain.setValueAtTime(0.18,t+0.1); g2.gain.exponentialRampToValueAtTime(0.001,t+0.7);
+    o2.connect(g2); g2.connect(ctx.destination); o2.start(t+0.1); o2.stop(t+0.7);
+  }},
+  { name: '彈指', fn() {
+    const ctx = getAudioCtx(), t = ctx.currentTime;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type='square'; o.frequency.setValueAtTime(1800,t); o.frequency.exponentialRampToValueAtTime(200,t+0.05);
+    g.gain.setValueAtTime(0.15,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.08);
+    o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+0.08);
+  }},
+  { name: '風鈴', fn() {
+    const ctx = getAudioCtx(), t = ctx.currentTime;
+    [1568,1318.5,1046.5].forEach((f,i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type='sine'; o.frequency.setValueAtTime(f,t+i*0.08);
+      g.gain.setValueAtTime(0.1,t+i*0.08); g.gain.exponentialRampToValueAtTime(0.001,t+i*0.08+0.4);
+      o.connect(g); g.connect(ctx.destination); o.start(t+i*0.08); o.stop(t+i*0.08+0.4);
+    });
+  }},
+  { name: '叮', fn() {
+    const ctx = getAudioCtx(), t = ctx.currentTime;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(1046.5,t);
+    g.gain.setValueAtTime(0.18,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.5);
+    o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+0.5);
+  }},
+];
+
+let selectedClickSound = 0;
+let selectedDealSound = 0;
+
+function playClickSound() { clickSounds[selectedClickSound].fn(); }
+function playDealSound() { dealSounds[selectedDealSound].fn(); }
+
+// ===== 開關設定 =====
+let optAnim = true;
+let optSound = true;
+
+function loadOptions() {
+  const saved = localStorage.getItem('healingBoxOptions');
+  if (saved) {
+    try {
+      const o = JSON.parse(saved);
+      if (typeof o.anim === 'boolean') optAnim = o.anim;
+      if (typeof o.sound === 'boolean') optSound = o.sound;
+    } catch(e) {}
+  }
+  updateToggleUI();
+}
+
+function saveOptions() {
+  localStorage.setItem('healingBoxOptions', JSON.stringify({ anim: optAnim, sound: optSound }));
+}
+
+function toggleOption(key) {
+  if (key === 'anim') optAnim = !optAnim;
+  if (key === 'sound') optSound = !optSound;
+  saveOptions();
+  updateToggleUI();
+}
+
+function updateToggleUI() {
+  const animBtn = document.getElementById('toggleAnim');
+  const soundBtn = document.getElementById('toggleSound');
+  if (animBtn) animBtn.classList.toggle('on', optAnim);
+  if (soundBtn) soundBtn.classList.toggle('on', optSound);
+}
+
+loadOptions();
+
+// ===== 音效選擇 =====
+function loadSoundChoice() {
+  const saved = localStorage.getItem('healingBoxSounds');
+  if (saved) {
+    try {
+      const s = JSON.parse(saved);
+      if (typeof s.click === 'number') selectedClickSound = s.click;
+      if (typeof s.deal === 'number') selectedDealSound = s.deal;
+    } catch(e) {}
+  }
+}
+loadSoundChoice();
+
+function saveSoundChoice() {
+  localStorage.setItem('healingBoxSounds', JSON.stringify({ click: selectedClickSound, deal: selectedDealSound }));
+}
+
+function initSoundOptions() {
+  const clickRow = document.getElementById('clickSoundOptions');
+  clickSounds.forEach((s, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'sound-chip' + (i === selectedClickSound ? ' selected' : '');
+    btn.textContent = s.name;
+    btn.onclick = () => {
+      selectedClickSound = i;
+      saveSoundChoice();
+      updateSoundChips();
+      s.fn();
+    };
+    clickRow.appendChild(btn);
+  });
+  const dealRow = document.getElementById('dealSoundOptions');
+  dealSounds.forEach((s, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'sound-chip' + (i === selectedDealSound ? ' selected' : '');
+    btn.textContent = s.name;
+    btn.onclick = () => {
+      selectedDealSound = i;
+      saveSoundChoice();
+      updateSoundChips();
+      s.fn();
+    };
+    dealRow.appendChild(btn);
+  });
+}
+
+function updateSoundChips() {
+  document.querySelectorAll('#clickSoundOptions .sound-chip').forEach((c, i) => {
+    c.classList.toggle('selected', i === selectedClickSound);
+  });
+  document.querySelectorAll('#dealSoundOptions .sound-chip').forEach((c, i) => {
+    c.classList.toggle('selected', i === selectedDealSound);
+  });
+}
+
+initSoundOptions();
+
+// ===== 開始遊戲 =====
+function startGame() {
+  if (optSound) playStartSound();
+  goTo('main');
+}
+
+// ===== 資料 =====
+const PASSWORD = '1813';
+const COLORS = ['紅色','黃色','紫色','淺藍色','綠色','橘色'];
+let data = {}; // { "1": ["卡片文字", ...], "2": [...], ... }
+let currentTab = 1;
+
+// 讀取資料（雲端優先，localStorage 作為快取）
+function loadData() {
+  // 先從 localStorage 載入（離線快取）
+  const saved = localStorage.getItem('healingBox');
+  if (saved) {
+    try { data = JSON.parse(saved); } catch(e) { data = {}; }
+  }
+  for (let i = 1; i <= 6; i++) {
+    if (!data[i]) data[i] = [];
+  }
+
+  // 從雲端載入最新資料
+  loadFromCloud().then(cloudData => {
+    if (cloudData) {
+      data = {};
+      for (let i = 1; i <= 6; i++) {
+        data[i] = cloudData[i] || [];
+      }
+      localStorage.setItem('healingBox', JSON.stringify(data));
+    }
+  });
+}
+loadData();
+
+// ===== 頁面切換 =====
+function goTo(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  if (pageId === 'settings') {
+    switchTab(currentTab);
+  }
+  // 每次切換頁面時從雲端重新載入最新資料
+  if (pageId === 'main') {
+    loadFromCloud().then(cloudData => {
+      if (cloudData) {
+        data = {};
+        for (let i = 1; i <= 6; i++) {
+          data[i] = cloudData[i] || [];
+        }
+        localStorage.setItem('healingBox', JSON.stringify(data));
+      }
+    });
+  }
+}
+
+// ===== 抽籤 =====
+function draw(id) {
+  const cards = data[id];
+  if (!cards || cards.length === 0) {
+    document.getElementById('emptyOverlay').classList.add('active');
+    return;
+  }
+  const text = cards[Math.floor(Math.random() * cards.length)];
+  const display = document.getElementById('cardDisplay');
+  display.setAttribute('data-color', id);
+  display.textContent = text;
+  // 動畫控制
+  display.classList.remove('flip-anim', 'no-anim', 'cardPop');
+  display.style.animation = 'none';
+  display.offsetHeight; // reflow
+  if (optAnim) {
+    display.classList.add('flip-anim');
+  } else {
+    display.classList.add('no-anim');
+  }
+  display.style.animation = '';
+  if (optSound) playDealSound();
+  document.getElementById('cardOverlay').classList.add('active');
+}
+
+function closeCard() {
+  document.getElementById('cardOverlay').classList.remove('active');
+}
+function closeEmpty() {
+  document.getElementById('emptyOverlay').classList.remove('active');
+}
+
+// ===== 儲存卡片為圖片 =====
+function saveCardImage() {
+  const card = document.getElementById('cardDisplay');
+  html2canvas(card, { backgroundColor: null, scale: 2 }).then(canvas => {
+    const link = document.createElement('a');
+    link.download = '療癒小卡片.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+}
+
+// ===== 密碼 =====
+function openPassword() {
+  document.getElementById('pwInput').value = '';
+  document.getElementById('pwError').style.display = 'none';
+  document.getElementById('pwOverlay').classList.add('active');
+  setTimeout(() => document.getElementById('pwInput').focus(), 100);
+}
+function closePassword() {
+  document.getElementById('pwOverlay').classList.remove('active');
+}
+function checkPassword() {
+  const val = document.getElementById('pwInput').value;
+  if (val === PASSWORD) {
+    closePassword();
+    goTo('settings');
+  } else {
+    document.getElementById('pwError').style.display = 'block';
+    document.getElementById('pwInput').value = '';
+    document.getElementById('pwInput').focus();
+  }
+}
+
+// ===== 員工設定 =====
+function switchTab(id) {
+  currentTab = id;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.tab-btn[data-id="${id}"]`).classList.add('active');
+  renderEditor();
+}
+
+let isComposing = false; // 追蹤注音/拼音組字狀態
+
+function renderEditor() {
+  const editor = document.getElementById('cardsEditor');
+  const cards = data[currentTab] || [];
+  let html = '';
+  for (let i = 0; i < 30; i++) {
+    html += `
+      <div class="card-input-row">
+        <label>${i + 1}.</label>
+        <input type="text" value="${escapeHtml(cards[i] || '')}"
+               placeholder="輸入卡片文字..." data-index="${i}">
+      </div>`;
+  }
+  editor.innerHTML = html;
+  editor.querySelectorAll('input').forEach(input => {
+    // 組字開始：暫停自動儲存
+    input.addEventListener('compositionstart', () => { isComposing = true; });
+    // 組字結束：執行儲存
+    input.addEventListener('compositionend', () => {
+      isComposing = false;
+      autoSave();
+    });
+    // input 事件：只在非組字狀態才儲存
+    input.addEventListener('input', () => {
+      if (!isComposing) autoSave();
+    });
+  });
+}
+
+function autoSave() {
+  const inputs = document.querySelectorAll('#cardsEditor input');
+  const cards = [];
+  inputs.forEach(input => {
+    const val = input.value.trim();
+    if (val) cards.push(val);
+  });
+  data[currentTab] = cards;
+  localStorage.setItem('healingBox', JSON.stringify(data));
+  saveToCloud(data);
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function saveSettings() {
+  const inputs = document.querySelectorAll('#cardsEditor input');
+  const cards = [];
+  inputs.forEach(input => {
+    const val = input.value.trim();
+    if (val) cards.push(val);
+  });
+  data[currentTab] = cards;
+  localStorage.setItem('healingBox', JSON.stringify(data));
+  saveToCloud(data);
+
+  // 顯示儲存提示
+  const toast = document.getElementById('saveToast');
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1500);
+}
+
+// ===== 背景設定 =====
+const gradients = [
+  { name: '夢幻粉紫', css: 'linear-gradient(135deg, #fce4ec, #f3e5f5, #e8eaf6, #e0f7fa)', animated: true },
+  { name: '日落橘紅', css: 'linear-gradient(135deg, #fde68a, #fdba74, #fca5a5)', animated: true },
+  { name: '海洋藍',   css: 'linear-gradient(135deg, #bfdbfe, #93c5fd, #a5f3fc)', animated: true },
+  { name: '森林綠',   css: 'linear-gradient(135deg, #bbf7d0, #86efac, #6ee7b7)', animated: true },
+  { name: '薰衣草',   css: 'linear-gradient(135deg, #e9d5ff, #d8b4fe, #c4b5fd)', animated: true },
+  { name: '蜜桃粉',   css: 'linear-gradient(135deg, #fecdd3, #fda4af, #fecaca)', animated: true },
+  { name: '星空紫',   css: 'linear-gradient(135deg, #4c1d95, #6d28d9, #7c3aed)', animated: true },
+  { name: '暖陽黃',   css: 'linear-gradient(135deg, #fef9c3, #fde047, #fbbf24)', animated: true },
+];
+const solids = [
+  { name: '白色',   css: '#ffffff' },
+  { name: '奶油白', css: '#fefce8' },
+  { name: '淺粉',   css: '#fce4ec' },
+  { name: '淺紫',   css: '#f3e5f5' },
+  { name: '淺藍',   css: '#e0f7fa' },
+  { name: '淺綠',   css: '#e8f5e9' },
+  { name: '淺橘',   css: '#fff3e0' },
+  { name: '淺灰',   css: '#f5f5f5' },
+];
+
+const textColors = [
+  { name: '深紫（預設）', color: '#5c3d6e' },
+  { name: '黑色',   color: '#1a1a1a' },
+  { name: '深藍',   color: '#1e3a5f' },
+  { name: '酒紅',   color: '#8b1a2b' },
+  { name: '深綠',   color: '#1b5e20' },
+  { name: '白色',   color: '#ffffff' },
+  { name: '粉紅',   color: '#e91e63' },
+  { name: '金色',   color: '#b8860b' },
+];
+
+let currentBg = null;
+let currentTextColor = null;
+
+function initBgPanel() {
+  const saved = localStorage.getItem('healingBoxBg');
+  if (saved) {
+    try { currentBg = JSON.parse(saved); applyBg(currentBg); } catch(e) {}
+  }
+  const savedText = localStorage.getItem('healingBoxTextColor');
+  if (savedText) {
+    try { currentTextColor = JSON.parse(savedText); applyTextColor(currentTextColor); } catch(e) {}
+  }
+
+  const gContainer = document.getElementById('gradientOptions');
+  gradients.forEach((g, i) => {
+    const div = document.createElement('div');
+    div.className = 'bg-swatch';
+    div.style.background = g.css;
+    div.title = g.name;
+    div.onclick = () => selectBg({ type: 'gradient', index: i });
+    gContainer.appendChild(div);
+  });
+
+  const sContainer = document.getElementById('solidOptions');
+  solids.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'bg-swatch';
+    div.style.background = s.css;
+    div.title = s.name;
+    div.onclick = () => selectBg({ type: 'solid', index: i });
+    sContainer.appendChild(div);
+  });
+
+  const tContainer = document.getElementById('textColorOptions');
+  textColors.forEach((t, i) => {
+    const div = document.createElement('div');
+    div.className = 'text-color-swatch';
+    div.style.background = t.color === '#ffffff' ? '#e0e0e0' : '#f5f5f5';
+    div.style.color = t.color;
+    div.title = t.name;
+    div.onclick = () => selectTextColor(i);
+    tContainer.appendChild(div);
+  });
+
+  updateSwatchSelection();
+}
+
+function selectBg(choice) {
+  currentBg = choice;
+  applyBg(choice);
+  localStorage.setItem('healingBoxBg', JSON.stringify(choice));
+  updateSwatchSelection();
+}
+
+function applyBg(choice) {
+  if (!choice) return;
+  if (choice.type === 'gradient') {
+    const g = gradients[choice.index];
+    document.body.style.background = g.css;
+    document.body.style.backgroundSize = '400% 400%';
+    document.body.style.animation = 'bgShift 12s ease infinite';
+  } else {
+    const s = solids[choice.index];
+    document.body.style.background = s.css;
+    document.body.style.backgroundSize = '';
+    document.body.style.animation = 'none';
+  }
+}
+
+function selectTextColor(index) {
+  currentTextColor = index;
+  applyTextColor(index);
+  localStorage.setItem('healingBoxTextColor', JSON.stringify(index));
+  updateSwatchSelection();
+}
+
+function applyTextColor(index) {
+  if (index === null || index === undefined) return;
+  const color = textColors[index].color;
+  document.querySelector('#landing h1').style.color = color;
+  document.querySelector('.main-title').style.color = color;
+  document.querySelector('.settings-title').style.color = color;
+}
+
+function updateSwatchSelection() {
+  document.querySelectorAll('.bg-swatch').forEach(s => s.classList.remove('selected'));
+  document.querySelectorAll('.text-color-swatch').forEach(s => s.classList.remove('selected'));
+  if (!currentBg) {
+    const first = document.querySelector('#gradientOptions .bg-swatch');
+    if (first) first.classList.add('selected');
+  } else {
+    const container = currentBg.type === 'gradient' ? '#gradientOptions' : '#solidOptions';
+    const swatches = document.querySelectorAll(`${container} .bg-swatch`);
+    if (swatches[currentBg.index]) swatches[currentBg.index].classList.add('selected');
+  }
+  // 文字顏色
+  const tcIndex = currentTextColor !== null ? currentTextColor : 0;
+  const tcSwatches = document.querySelectorAll('#textColorOptions .text-color-swatch');
+  if (tcSwatches[tcIndex]) tcSwatches[tcIndex].classList.add('selected');
+}
+
+function toggleBgPanel() {
+  document.getElementById('bgPanel').classList.toggle('active');
+}
+
+// 點擊面板外關閉
+document.addEventListener('click', function(e) {
+  const panel = document.getElementById('bgPanel');
+  const gear = document.querySelector('.gear-btn');
+  if (panel.classList.contains('active') && !panel.contains(e.target) && e.target !== gear) {
+    panel.classList.remove('active');
+  }
+});
+
+initBgPanel();
+
+// 點擊 overlay 背景關閉
+document.getElementById('cardOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeCard();
+});
+document.getElementById('pwOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closePassword();
+});
+document.getElementById('emptyOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeEmpty();
+});
+</script>
+</body>
+</html>
