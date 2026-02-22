@@ -559,7 +559,7 @@
       <div class="sound-select-row" id="dealSoundOptions"></div>
     </div>
   </div>
-  <button class="settings-btn" onclick="if(optSound)playClickSound();openPassword()">員工設定</button>
+  <button class="settings-btn" onclick="if(optSound)playClickSound();goTo('settings')">卡片</button>
   <h2 class="main-title">選出抽到的籤</h2>
   <div class="buttons-row">
     <button class="draw-btn" data-id="1" onclick="draw(1)">1</button>
@@ -571,10 +571,10 @@
   </div>
 </div>
 
-<!-- ========== 員工設定頁 ========== -->
+<!-- ========== 卡片設定頁 ========== -->
 <div id="settings" class="page">
   <button class="back-btn" onclick="goTo('main')">← 返回</button>
-  <h2 class="settings-title">員工設定</h2>
+  <h2 class="settings-title">卡片設定</h2>
   <div class="tab-row">
     <button class="tab-btn active" data-id="1" onclick="switchTab(1)">1</button>
     <button class="tab-btn" data-id="2" onclick="switchTab(2)">2</button>
@@ -597,20 +597,6 @@
     <div class="card-actions">
       <button class="save-card-btn" onclick="saveCardImage()">儲存此照片</button>
       <button class="close-card-btn" onclick="closeCard()">關 閉</button>
-    </div>
-  </div>
-</div>
-
-<!-- ========== 密碼 Overlay ========== -->
-<div class="overlay" id="pwOverlay">
-  <div class="password-box">
-    <h2>請輸入員工密碼</h2>
-    <input type="password" id="pwInput" maxlength="10" placeholder="密碼"
-           onkeydown="if(event.key==='Enter')checkPassword()">
-    <div class="pw-error" id="pwError">密碼錯誤，請重試</div>
-    <div class="pw-actions">
-      <button class="pw-confirm" onclick="checkPassword()">確 認</button>
-      <button class="pw-cancel" onclick="closePassword()">取 消</button>
     </div>
   </div>
 </div>
@@ -889,27 +875,35 @@ function startGame() {
 }
 
 // ===== 資料 =====
-const PASSWORD = '1813';
 const COLORS = ['紅色','黃色','紫色','淺藍色','綠色','橘色'];
 let data = {}; // { "1": ["卡片文字", ...], "2": [...], ... }
 let currentTab = 1;
 
-// 讀取資料（雲端優先，localStorage 作為離線備用）
+// 讀取資料（localStorage 優先，第一次造訪才從 data.json 載入預設值）
 async function loadData() {
-  // 優先從伺服器載入
-  const cloudData = await loadFromCloud();
-  if (cloudData) {
-    data = {};
-    for (let i = 1; i <= 6; i++) {
-      data[i] = cloudData[i] || [];
-    }
-    localStorage.setItem('healingBox', JSON.stringify(data));
-    return;
-  }
-  // 伺服器連不上才用 localStorage
+  // 先檢查 localStorage 有沒有資料
   const saved = localStorage.getItem('healingBox');
   if (saved) {
     try { data = JSON.parse(saved); } catch(e) { data = {}; }
+    // 確認不是空的（至少有一個按鈕有卡片）
+    let hasCards = false;
+    for (let i = 1; i <= 6; i++) {
+      if (data[i] && data[i].length > 0) { hasCards = true; break; }
+    }
+    if (hasCards) {
+      for (let i = 1; i <= 6; i++) { if (!data[i]) data[i] = []; }
+      return;
+    }
+  }
+  // 第一次造訪或資料是空的，從 data.json 載入預設卡片
+  const defaultData = await loadFromCloud();
+  if (defaultData) {
+    data = {};
+    for (let i = 1; i <= 6; i++) {
+      data[i] = defaultData[i] || [];
+    }
+    localStorage.setItem('healingBox', JSON.stringify(data));
+    return;
   }
   for (let i = 1; i <= 6; i++) {
     if (!data[i]) data[i] = [];
@@ -923,18 +917,6 @@ function goTo(pageId) {
   document.getElementById(pageId).classList.add('active');
   if (pageId === 'settings') {
     switchTab(currentTab);
-  }
-  // 每次切換頁面時從雲端重新載入最新資料
-  if (pageId === 'main') {
-    loadFromCloud().then(cloudData => {
-      if (cloudData) {
-        data = {};
-        for (let i = 1; i <= 6; i++) {
-          data[i] = cloudData[i] || [];
-        }
-        localStorage.setItem('healingBox', JSON.stringify(data));
-      }
-    });
   }
 }
 
@@ -981,29 +963,7 @@ function saveCardImage() {
   });
 }
 
-// ===== 密碼 =====
-function openPassword() {
-  document.getElementById('pwInput').value = '';
-  document.getElementById('pwError').style.display = 'none';
-  document.getElementById('pwOverlay').classList.add('active');
-  setTimeout(() => document.getElementById('pwInput').focus(), 100);
-}
-function closePassword() {
-  document.getElementById('pwOverlay').classList.remove('active');
-}
-function checkPassword() {
-  const val = document.getElementById('pwInput').value;
-  if (val === PASSWORD) {
-    closePassword();
-    goTo('settings');
-  } else {
-    document.getElementById('pwError').style.display = 'block';
-    document.getElementById('pwInput').value = '';
-    document.getElementById('pwInput').focus();
-  }
-}
-
-// ===== 員工設定 =====
+// ===== 卡片設定 =====
 function switchTab(id) {
   currentTab = id;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1226,9 +1186,6 @@ initBgPanel();
 // 點擊 overlay 背景關閉
 document.getElementById('cardOverlay').addEventListener('click', function(e) {
   if (e.target === this) closeCard();
-});
-document.getElementById('pwOverlay').addEventListener('click', function(e) {
-  if (e.target === this) closePassword();
 });
 document.getElementById('emptyOverlay').addEventListener('click', function(e) {
   if (e.target === this) closeEmpty();
