@@ -888,9 +888,19 @@ const COLORS = ['紅色','黃色','紫色','淺藍色','綠色','橘色'];
 let data = {}; // { "1": ["卡片文字", ...], "2": [...], ... }
 let currentTab = 1;
 
-// 讀取資料（雲端優先，localStorage 作為快取）
-function loadData() {
-  // 先從 localStorage 載入（離線快取）
+// 讀取資料（雲端優先，localStorage 作為離線備用）
+async function loadData() {
+  // 優先從伺服器載入
+  const cloudData = await loadFromCloud();
+  if (cloudData) {
+    data = {};
+    for (let i = 1; i <= 6; i++) {
+      data[i] = cloudData[i] || [];
+    }
+    localStorage.setItem('healingBox', JSON.stringify(data));
+    return;
+  }
+  // 伺服器連不上才用 localStorage
   const saved = localStorage.getItem('healingBox');
   if (saved) {
     try { data = JSON.parse(saved); } catch(e) { data = {}; }
@@ -898,17 +908,6 @@ function loadData() {
   for (let i = 1; i <= 6; i++) {
     if (!data[i]) data[i] = [];
   }
-
-  // 從雲端載入最新資料
-  loadFromCloud().then(cloudData => {
-    if (cloudData) {
-      data = {};
-      for (let i = 1; i <= 6; i++) {
-        data[i] = cloudData[i] || [];
-      }
-      localStorage.setItem('healingBox', JSON.stringify(data));
-    }
-  });
 }
 loadData();
 
