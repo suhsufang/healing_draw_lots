@@ -626,14 +626,20 @@
 
 <script>
 // ===== 資料同步設定 =====
-// 從伺服器讀取資料
+// 讀取資料：先試 API（本機伺服器），失敗再試靜態 data.json（GitHub Pages）
 function loadFromCloud() {
   return fetch('/api/data')
     .then(r => r.ok ? r.json() : null)
-    .catch(() => null);
+    .catch(() => null)
+    .then(result => {
+      if (result) return result;
+      return fetch('data.json')
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null);
+    });
 }
 
-// 儲存到伺服器
+// 儲存到伺服器（GitHub Pages 上無效，但不影響使用）
 function saveToCloud(d) {
   return fetch('/api/data', {
     method: 'POST',
