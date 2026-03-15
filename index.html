@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>療癒抽籤箱</title>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
   /* ===== 基本設定 ===== */
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -595,8 +594,7 @@
       <div class="card" id="cardDisplay" data-color="1"></div>
     </div>
     <div class="card-actions">
-      <button class="save-card-btn" onclick="saveCardImage()">儲存此照片</button>
-      <button class="close-card-btn" onclick="closeCard()">關 閉</button>
+<button class="close-card-btn" onclick="closeCard()">關 閉</button>
     </div>
   </div>
 </div>
@@ -952,16 +950,6 @@ function closeEmpty() {
   document.getElementById('emptyOverlay').classList.remove('active');
 }
 
-// ===== 儲存卡片為圖片 =====
-function saveCardImage() {
-  const card = document.getElementById('cardDisplay');
-  html2canvas(card, { backgroundColor: null, scale: 2 }).then(canvas => {
-    const link = document.createElement('a');
-    link.download = '療癒小卡片.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-  });
-}
 
 // ===== 卡片設定 =====
 function switchTab(id) {
