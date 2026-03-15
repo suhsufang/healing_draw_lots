@@ -751,7 +751,6 @@
       <button class="admin-save-btn" onclick="saveAdmin()">儲 存（更新所有人預設值）</button>
       <span class="admin-toast" id="adminToast">已儲存！</span>
     </div>
-    <div class="admin-error" id="adminError">⚠️ 儲存失敗，請確認伺服器有在執行</div>
   </div>
 </div>
 
@@ -1393,23 +1392,18 @@ function saveAdminEditorToMemory() {
   adminData[adminTab] = cards;
 }
 
-async function saveAdmin() {
+function saveAdmin() {
   saveAdminEditorToMemory();
-  const errorEl = document.getElementById('adminError');
-  errorEl.style.display = 'none';
-  try {
-    const res = await fetch('/api/data', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(adminData)
-    });
-    if (!res.ok) throw new Error('server error');
-    const toast = document.getElementById('adminToast');
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 2000);
-  } catch(e) {
-    errorEl.style.display = 'block';
-  }
+  const json = JSON.stringify(adminData, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'data.json';
+  link.click();
+  const toast = document.getElementById('adminToast');
+  toast.textContent = '已下載！請傳給方芳更新';
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
 // 點擊 overlay 背景關閉
