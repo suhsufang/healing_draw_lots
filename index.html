@@ -385,6 +385,135 @@
   .pw-cancel { background: #e5e7eb; color: #374151; }
   .pw-error { color: #ef4444; margin-top: 10px; font-size: 0.9rem; display: none; }
 
+  /* ===== 管理員面板 ===== */
+  #adminOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+  }
+  #adminOverlay.active { display: flex; }
+  .admin-box {
+    background: #1e1b2e;
+    border-radius: 20px;
+    padding: 28px 24px 24px;
+    width: min(620px, 95vw);
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 12px 50px rgba(0,0,0,0.5);
+    animation: cardPop 0.3s ease;
+  }
+  .admin-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .admin-title {
+    color: #c4b5fd;
+    font-size: 1.2rem;
+    font-weight: bold;
+    letter-spacing: 2px;
+  }
+  .admin-badge {
+    background: #7c3aed;
+    color: #fff;
+    font-size: 0.7rem;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+  }
+  .admin-close-btn {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+  }
+  .admin-close-btn:hover { color: #fff; }
+  .admin-tab-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .admin-tab-btn {
+    flex: 1;
+    padding: 8px 0;
+    border: none;
+    border-radius: 10px;
+    background: #2d2847;
+    color: #c4b5fd;
+    font-size: 0.95rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .admin-tab-btn.active { background: #7c3aed; color: #fff; }
+  .admin-editor {
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .admin-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .admin-input-row label {
+    color: #9ca3af;
+    font-size: 0.85rem;
+    min-width: 24px;
+    text-align: right;
+  }
+  .admin-input-row input {
+    flex: 1;
+    padding: 7px 12px;
+    border: 1.5px solid #3b3560;
+    border-radius: 8px;
+    background: #2d2847;
+    color: #e5e7eb;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .admin-input-row input:focus { border-color: #8b5cf6; }
+  .admin-actions { display: flex; gap: 10px; align-items: center; }
+  .admin-save-btn {
+    flex: 1;
+    padding: 12px;
+    background: #7c3aed;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .admin-save-btn:hover { background: #6d28d9; }
+  .admin-toast {
+    color: #86efac;
+    font-size: 0.9rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .admin-toast.show { opacity: 1; }
+  .admin-error {
+    color: #fca5a5;
+    font-size: 0.85rem;
+    margin-top: 6px;
+    display: none;
+  }
+
   /* ===== 員工設定頁 ===== */
   #settings {
     overflow-y: auto;
@@ -596,6 +725,33 @@
     <div class="card-actions">
 <button class="close-card-btn" onclick="closeCard()">關 閉</button>
     </div>
+  </div>
+</div>
+
+<!-- ========== 管理員面板 Overlay ========== -->
+<div id="adminOverlay">
+  <div class="admin-box">
+    <div class="admin-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="admin-title">管理員模式</span>
+        <span class="admin-badge">預設卡片</span>
+      </div>
+      <button class="admin-close-btn" onclick="closeAdmin()">✕</button>
+    </div>
+    <div class="admin-tab-row">
+      <button class="admin-tab-btn active" data-id="1" onclick="switchAdminTab(1)">1</button>
+      <button class="admin-tab-btn" data-id="2" onclick="switchAdminTab(2)">2</button>
+      <button class="admin-tab-btn" data-id="3" onclick="switchAdminTab(3)">3</button>
+      <button class="admin-tab-btn" data-id="4" onclick="switchAdminTab(4)">4</button>
+      <button class="admin-tab-btn" data-id="5" onclick="switchAdminTab(5)">5</button>
+      <button class="admin-tab-btn" data-id="6" onclick="switchAdminTab(6)">6</button>
+    </div>
+    <div class="admin-editor" id="adminEditor"></div>
+    <div class="admin-actions">
+      <button class="admin-save-btn" onclick="saveAdmin()">儲 存（更新所有人預設值）</button>
+      <span class="admin-toast" id="adminToast">已儲存！</span>
+    </div>
+    <div class="admin-error" id="adminError">⚠️ 儲存失敗，請確認伺服器有在執行</div>
   </div>
 </div>
 
@@ -1170,6 +1326,91 @@ document.addEventListener('click', function(e) {
 });
 
 initBgPanel();
+
+// ===== 管理員面板（按 1318 開啟）=====
+let adminData = null;
+let adminTab = 1;
+let keyBuffer = '';
+
+document.addEventListener('keydown', function(e) {
+  // 在 input/textarea 內打字時不觸發
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  keyBuffer += e.key;
+  if (keyBuffer.length > 4) keyBuffer = keyBuffer.slice(-4);
+  if (keyBuffer === '1318') {
+    keyBuffer = '';
+    openAdmin();
+  }
+});
+
+async function openAdmin() {
+  const result = await loadFromCloud();
+  if (!result) {
+    alert('無法載入預設資料，請確認伺服器有在執行');
+    return;
+  }
+  adminData = JSON.parse(JSON.stringify(result));
+  adminTab = 1;
+  document.getElementById('adminOverlay').classList.add('active');
+  document.getElementById('adminError').style.display = 'none';
+  renderAdminEditor();
+}
+
+function closeAdmin() {
+  document.getElementById('adminOverlay').classList.remove('active');
+  adminData = null;
+}
+
+function switchAdminTab(id) {
+  saveAdminEditorToMemory();
+  adminTab = id;
+  document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.admin-tab-btn[data-id="${id}"]`).classList.add('active');
+  renderAdminEditor();
+}
+
+function renderAdminEditor() {
+  const editor = document.getElementById('adminEditor');
+  const cards = adminData[adminTab] || [];
+  let html = '';
+  for (let i = 0; i < 30; i++) {
+    html += `<div class="admin-input-row">
+      <label>${i + 1}.</label>
+      <input type="text" value="${escapeHtml(cards[i] || '')}" placeholder="輸入卡片文字..." data-index="${i}">
+    </div>`;
+  }
+  editor.innerHTML = html;
+}
+
+function saveAdminEditorToMemory() {
+  if (!adminData) return;
+  const inputs = document.querySelectorAll('#adminEditor input');
+  const cards = [];
+  inputs.forEach(input => {
+    const val = input.value.trim();
+    if (val) cards.push(val);
+  });
+  adminData[adminTab] = cards;
+}
+
+async function saveAdmin() {
+  saveAdminEditorToMemory();
+  const errorEl = document.getElementById('adminError');
+  errorEl.style.display = 'none';
+  try {
+    const res = await fetch('/api/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(adminData)
+    });
+    if (!res.ok) throw new Error('server error');
+    const toast = document.getElementById('adminToast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  } catch(e) {
+    errorEl.style.display = 'block';
+  }
+}
 
 // 點擊 overlay 背景關閉
 document.getElementById('cardOverlay').addEventListener('click', function(e) {
