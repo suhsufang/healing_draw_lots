@@ -1031,6 +1031,8 @@ function startGame() {
 const COLORS = ['紅色','黃色','紫色','淺藍色','綠色','橘色'];
 let data = {}; // { "1": ["卡片文字", ...], "2": [...], ... }
 let currentTab = 1;
+let dataLoaded = false;
+let loadDataPromise = null;
 
 // 讀取資料（localStorage 優先，第一次造訪才從 data.json 載入預設值）
 async function loadData() {
@@ -1045,6 +1047,7 @@ async function loadData() {
     }
     if (hasCards) {
       for (let i = 1; i <= 6; i++) { if (!data[i]) data[i] = []; }
+      dataLoaded = true;
       return;
     }
   }
@@ -1056,13 +1059,15 @@ async function loadData() {
       data[i] = defaultData[i] || [];
     }
     localStorage.setItem('healingBox', JSON.stringify(data));
+    dataLoaded = true;
     return;
   }
   for (let i = 1; i <= 6; i++) {
     if (!data[i]) data[i] = [];
   }
+  dataLoaded = true;
 }
-loadData();
+loadDataPromise = loadData();
 
 // ===== 頁面切換 =====
 function goTo(pageId) {
@@ -1074,7 +1079,10 @@ function goTo(pageId) {
 }
 
 // ===== 抽籤 =====
-function draw(id) {
+async function draw(id) {
+  if (!dataLoaded) {
+    await loadDataPromise;
+  }
   const cards = data[id];
   if (!cards || cards.length === 0) {
     document.getElementById('emptyOverlay').classList.add('active');
@@ -1107,10 +1115,13 @@ function closeEmpty() {
 
 
 // ===== 卡片設定 =====
-function switchTab(id) {
+async function switchTab(id) {
   currentTab = id;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelector(`.tab-btn[data-id="${id}"]`).classList.add('active');
+  if (!dataLoaded) {
+    await loadDataPromise;
+  }
   renderEditor();
 }
 
